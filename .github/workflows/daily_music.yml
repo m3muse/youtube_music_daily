@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *'  # 매일 오전 9시 (한국시간 = UTC 00:00)
   workflow_dispatch:      # 수동 실행 버튼
 
+permissions:
+  contents: write
+
 jobs:
   send-music:
     runs-on: ubuntu-latest
@@ -28,3 +31,11 @@ jobs:
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
         run: python youtube_music.py
+
+      - name: 히스토리 저장
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git add history.json
+          git diff --staged --quiet || git commit -m "히스토리 업데이트"
+          git push

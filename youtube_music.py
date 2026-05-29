@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import smtplib
@@ -15,6 +16,9 @@ GMAIL = os.getenv('GMAIL')
 GMAIL_PASSWORD = os.getenv('GMAIL_PASSWORD')
 RECIPIENT_EMAIL = os.getenv('RECIPIENT_EMAIL')
 
+HISTORY_FILE = "history.json"
+MAX_HISTORY = 500
+
 ALL_GENRES = [
     "Jazz", "Funk", "Soul", "R&B", "Neo-Soul", "Disco", "Reggae", "Ska", "Dub",
     "Blues", "Indie Rock", "Indie Pop", "Ballad", "Folk", "Country", "Electronica",
@@ -25,7 +29,10 @@ ALL_GENRES = [
     "Calypso", "Film OST", "World Fusion", "Arabic Jazz", "Oud music",
     "Gnawa", "Rai", "Tropicalia", "Forró", "Son Cubano", "Vallenato",
     "Post-Rock", "Ambient", "Psychedelic", "Surf Rock", "Rocksteady",
+    "Hip-Hop", "World Music",
 ]
+
+ERAS = ["1950s", "1960s", "1970s", "1980s", "1990s", "2000s", "2010s", "2020s"]
 
 WEEKLY_REGIONS = {
     0: {"label": "아프리카", "regions": ["Nigeria", "Ethiopia", "Mali", "Senegal", "Ghana", "Congo", "Kenya", "Cameroon", "Tanzania", "Mozambique", "Zimbabwe", "Ivory Coast"]},
@@ -38,45 +45,65 @@ WEEKLY_REGIONS = {
 }
 
 
-def get_today_theme():
+def load_history():
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, 'r') as f:
+            return set(json.load(f))
+    return set()
+
+
+def save_history(history, new_ids):
+    updated = list(history) + list(new_ids)
+    updated = updated[-MAX_HISTORY:]
+    with open(HISTORY_FILE, 'w') as f:
+        json.dump(updated, f)
+
+
+def get_daily_combinations():
     weekday = datetime.now().weekday()
     theme = WEEKLY_REGIONS[weekday]
-    region = random.choice(theme["regions"])
-    genre = random.choice(ALL_GENRES)
-    era = random.choice(["1950s", "1960s", "1970s", "1980s", "1990s", "2000s", "2010s", "2020s"])
-    return theme["label"], region, genre, era
+    genres = random.sample(ALL_GENRES, 10)
+    combos = []
+    for genre in genres:
+        region = random.choice(theme["regions"])
+        era = random.choice(ERAS)
+        combos.append((region, genre, era))
+    return theme["label"], combos
 
 
-def search_music(region, genre, era, max_results=20):
-    youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+def search_one_song(youtube, region, genre, era, history):
     query = f"{genre} {region} music {era}"
     response = youtube.search().list(
         part='snippet',
         q=query,
         type='video',
         videoCategoryId='10',
-        maxResults=max_results,
+        maxResults=10,
         order='relevance',
     ).execute()
     items = response.get('items', [])
-    random.shuffle(items)
-    return items[:10]
+    # 히스토리에 없는 곡만 필터링
+    fresh = [item for item in items if item['id']['videoId'] not in history]
+    if fresh:
+        return random.choice(fresh)
+    # 모두 히스토리에 있으면 그냥 랜덤 선택
+    return random.choice(items) if items else None
 
 
-def format_body(label, region, genre, era, items):
+def format_body(label, songs):
     today = date.today().strftime('%Y년 %m월 %d일')
     lines = [
-        f"{today} 오늘의 음악 발굴",
-        f"테마: {label} | {region} · {genre} · {era}",
+        f"{today} 오늘의 음악 발굴 - {label}",
         "=" * 55,
         "",
     ]
-    for i, item in enumerate(items, 1):
+    for i, (item, region, genre, era) in enumerate(songs, 1):
         title = item['snippet']['title']
         channel = item['snippet']['channelTitle']
         video_id = item['id']['videoId']
         url = f"https://www.youtube.com/watch?v={video_id}"
-        lines.append(f"{i}. {title}")
+        lines.append(f"{i}. [{genre} / {region} / {era}]")
+        lines.append(f"   {title}")
         lines.append(f"   채널: {channel}")
         lines.append(f"   {url}")
         lines.append("")
@@ -95,14 +122,27 @@ def send_email(subject, body):
 
 
 def main():
-    label, region, genre, era = get_today_theme()
-    print(f"오늘의 테마: {label} / {region} / {genre} / {era}")
+    history = load_history()
+    print(f"히스토리 로드: {len(history)}곡 기록됨")
 
-    items = search_music(region, genre, era)
-    body = format_body(label, region, genre, era, items)
+    label, combos = get_daily_combinations()
+    print(f"오늘의 테마: {label}")
 
+    youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+    songs = []
+    for region, genre, era in combos:
+        print(f"  검색 중: {genre} / {region} / {era}")
+        item = search_one_song(youtube, region, genre, era, history)
+        if item:
+            songs.append((item, region, genre, era))
+
+    new_ids = [item['id']['videoId'] for item, _, _, _ in songs]
+    save_history(history, new_ids)
+    print(f"히스토리 저장: {len(new_ids)}곡 추가")
+
+    body = format_body(label, songs)
     today = date.today().strftime('%Y년 %m월 %d일')
-    subject = f"[오늘의 음악] {today} - {label} ({region} · {genre})"
+    subject = f"[오늘의 음악] {today} - {label}"
 
     print("이메일 전송 중...")
     send_email(subject, body)
