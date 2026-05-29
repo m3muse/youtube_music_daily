@@ -183,30 +183,42 @@ def build_page(label, songs):
     }}
     .hero-badge {{
       display: inline-block;
-      background: rgba(255,255,255,0.3);
-      color: white;
-      font-size: 13px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 6px 18px;
+      background: rgba(0,0,0,0.18);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 7px 20px;
       border-radius: 20px;
       margin-bottom: 18px;
     }}
     .hero-title {{
       font-size: 44px;
       font-weight: 800;
-      color: white;
-      text-shadow: 0 2px 20px rgba(0,0,0,0.12);
-      margin-bottom: 10px;
+      color: #3d1f1f;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+      margin-bottom: 16px;
       position: relative;
       z-index: 1;
     }}
+    .hero-region {{
+      display: inline-block;
+      background: rgba(0,0,0,0.15);
+      color: #2d1010;
+      font-size: 22px;
+      font-weight: 800;
+      padding: 8px 24px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      letter-spacing: 0.5px;
+    }}
     .hero-sub {{
-      font-size: 18px;
-      color: rgba(255,255,255,0.9);
-      font-weight: 400;
+      font-size: 17px;
+      color: #5a2e2e;
+      font-weight: 500;
       position: relative;
       z-index: 1;
+      margin-top: 6px;
     }}
     .cards-wrap {{
       max-width: 980px;
@@ -292,9 +304,10 @@ def build_page(label, songs):
 </head>
 <body>
   <div class="hero">
-    <div class="hero-badge">{weekday_kr}요일 · {today}</div>
+    <div class="hero-badge">🗓 {weekday_kr}요일 &nbsp;·&nbsp; {today}</div>
     <h1 class="hero-title">🎵 오늘의 음악 발굴</h1>
-    <p class="hero-sub">{label} — 세계 각지의 숨겨진 음악</p>
+    <div class="hero-region">📍 {label}</div>
+    <p class="hero-sub">오늘은 {label}의 음악을 함께 탐험합니다</p>
   </div>
 
   <div class="cards-wrap">
