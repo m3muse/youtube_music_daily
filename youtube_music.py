@@ -314,7 +314,7 @@ def build_page(label, songs):
     {cards_html}
   </div>
 
-  <div class="footer">매일 오전 9시, 새로운 음악을 발굴합니다</div>
+  <div class="footer">매일 오전 6시 (중국시간), 세계 각지의 숨겨진 음악을 발굴합니다</div>
 </body>
 </html>"""
 
