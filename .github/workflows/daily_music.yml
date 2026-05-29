@@ -15,6 +15,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 최신 상태 동기화
+        run: git pull origin main
 
       - name: Python 설정
         uses: actions/setup-python@v5
@@ -38,5 +43,4 @@ jobs:
           git config user.name "GitHub Actions"
           git add history.json
           git diff --staged --quiet || git commit -m "히스토리 업데이트"
-          git pull --rebase
-          git push
+          git push origin main
