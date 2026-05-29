@@ -37,10 +37,10 @@ jobs:
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
         run: python youtube_music.py
 
-      - name: 히스토리 저장
+      - name: 결과 저장
         run: |
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
-          git add history.json
-          git diff --staged --quiet || git commit -m "히스토리 업데이트"
+          git add history.json docs/
+          git diff --staged --quiet || git commit -m "히스토리 + 페이지 업데이트"
           git push origin main

@@ -18,6 +18,8 @@ RECIPIENT_EMAIL = os.getenv('RECIPIENT_EMAIL')
 
 HISTORY_FILE = "history.json"
 MAX_HISTORY = 500
+DOCS_DIR = "docs"
+PAGE_URL = "https://m3muse.github.io/youtube_music_daily/"
 
 ALL_GENRES = [
     "Jazz", "Funk", "Soul", "R&B", "Neo-Soul", "Disco", "Reggae", "Ska", "Dub",
@@ -43,6 +45,19 @@ WEEKLY_REGIONS = {
     5: {"label": "한국·동아시아", "regions": ["Korea", "Japan", "Taiwan", "Hong Kong", "China", "Okinawa"]},
     6: {"label": "중동·중앙아시아", "regions": ["Morocco", "Lebanon", "Iran", "Cape Verde", "Algeria", "Syria", "Uzbekistan", "Georgia", "Armenia", "Tunisia", "Egypt", "Iraq"]},
 }
+
+CARD_THEMES = [
+    {"gradient": "linear-gradient(135deg, #FF6B6B, #FF8E53)", "bg": "#FFF5F5", "tag": "#FFE0E0", "tag_text": "#C0392B"},
+    {"gradient": "linear-gradient(135deg, #4ECDC4, #44A08D)", "bg": "#F0FAFA", "tag": "#D5F5F2", "tag_text": "#1A7A72"},
+    {"gradient": "linear-gradient(135deg, #A29BFE, #6C5CE7)", "bg": "#F5F3FF", "tag": "#E5E0FF", "tag_text": "#5A47D1"},
+    {"gradient": "linear-gradient(135deg, #FFA502, #FF6348)", "bg": "#FFF8F0", "tag": "#FFE8CC", "tag_text": "#C0611A"},
+    {"gradient": "linear-gradient(135deg, #74B9FF, #0984E3)", "bg": "#F0F7FF", "tag": "#D0E8FF", "tag_text": "#1565C0"},
+    {"gradient": "linear-gradient(135deg, #55EFC4, #00B894)", "bg": "#F0FFF9", "tag": "#C8F7E8", "tag_text": "#006B4F"},
+    {"gradient": "linear-gradient(135deg, #FDCB6E, #E17055)", "bg": "#FFFBF0", "tag": "#FDECC8", "tag_text": "#9C5A2A"},
+    {"gradient": "linear-gradient(135deg, #FD79A8, #E84393)", "bg": "#FFF0F7", "tag": "#FFD0EA", "tag_text": "#A0175F"},
+    {"gradient": "linear-gradient(135deg, #81ECEC, #00CEC9)", "bg": "#F0FFFE", "tag": "#C8F4F4", "tag_text": "#007A78"},
+    {"gradient": "linear-gradient(135deg, #A8C0FF, #3F2B96)", "bg": "#F3F0FF", "tag": "#DDD8FF", "tag_text": "#2E1F7A"},
+]
 
 
 def load_history():
@@ -88,93 +103,258 @@ def search_one_song(youtube, region, genre, era, history):
     return random.choice(items) if items else None
 
 
-def build_song_card(index, item, region, genre, era):
+def build_card(index, item, region, genre, era, theme):
     title = item['snippet']['title']
     artist = item['snippet']['channelTitle']
     video_id = item['id']['videoId']
-    url = f"https://www.youtube.com/watch?v={video_id}"
-    thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+    gradient = theme['gradient']
+    bg = theme['bg']
+    tag_bg = theme['tag']
+    tag_color = theme['tag_text']
 
     return f"""
-    <tr>
-      <td style="padding:20px 24px;border-bottom:1px solid #2a2a2a;">
-        <table width="100%" cellpadding="0" cellspacing="0">
-          <tr>
-            <td style="color:#666;font-size:12px;font-weight:bold;padding-bottom:10px;">
-              #{index} &nbsp;
-              <span style="background:#2a2a2a;color:#999;padding:3px 8px;border-radius:4px;margin-right:4px;">{genre}</span>
-              <span style="background:#2a2a2a;color:#999;padding:3px 8px;border-radius:4px;margin-right:4px;">{region}</span>
-              <span style="background:#2a2a2a;color:#999;padding:3px 8px;border-radius:4px;">{era}</span>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <table cellpadding="0" cellspacing="0">
-                <tr>
-                  <td width="180" valign="top" style="padding-right:16px;">
-                    <a href="{url}" target="_blank" style="display:block;">
-                      <img src="{thumbnail}" width="180" height="101"
-                           style="display:block;border-radius:8px;border:0;" alt="{title}">
-                    </a>
-                    <a href="{url}" target="_blank"
-                       style="display:block;margin-top:8px;background:#ff0000;color:#fff;
-                              text-align:center;padding:7px 0;border-radius:6px;
-                              text-decoration:none;font-size:13px;font-weight:bold;">
-                      ▶ &nbsp;YouTube 재생
-                    </a>
-                  </td>
-                  <td valign="top">
-                    <p style="margin:0 0 6px;font-size:16px;font-weight:bold;color:#ffffff;line-height:1.4;">{title}</p>
-                    <p style="margin:0;font-size:14px;color:#aaaaaa;">{artist}</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+    <div class="card">
+      <div class="card-accent" style="background:{gradient};"></div>
+      <div class="card-video">
+        <iframe src="https://www.youtube.com/embed/{video_id}"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                allowfullscreen></iframe>
+      </div>
+      <div class="card-body" style="background:{bg};">
+        <div class="card-tags">
+          <span class="tag" style="background:{tag_bg};color:{tag_color};">{genre}</span>
+          <span class="tag" style="background:{tag_bg};color:{tag_color};">{region}</span>
+          <span class="tag" style="background:{tag_bg};color:{tag_color};">{era}</span>
+        </div>
+        <div class="card-title">
+          <span class="num" style="background:{gradient};">{index}</span>
+          {title}
+        </div>
+        <div class="card-artist">🎤 {artist}</div>
+      </div>
+    </div>
     """
 
 
-def build_html(label, songs):
+def build_page(label, songs):
     today = date.today().strftime('%Y년 %m월 %d일')
     weekday_kr = ["월", "화", "수", "목", "금", "토", "일"][datetime.now().weekday()]
 
-    cards = "".join(
-        build_song_card(i, item, region, genre, era)
+    cards_html = "".join(
+        build_card(i, item, region, genre, era, CARD_THEMES[i - 1])
         for i, (item, region, genre, era) in enumerate(songs, 1)
     )
 
     return f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:20px 0;background:#0a0a0a;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="600" cellpadding="0" cellspacing="0"
-         style="margin:0 auto;background:#161616;border-radius:12px;overflow:hidden;">
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎵 오늘의 음악 발굴 | {today}</title>
+  <style>
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', Arial, sans-serif;
+      background: #f4f6fb;
+      min-height: 100vh;
+    }}
+    .hero {{
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #ffecd2 100%);
+      padding: 70px 20px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }}
+    .hero::before {{
+      content: '';
+      position: absolute;
+      top: -60px; left: -60px;
+      width: 220px; height: 220px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 50%;
+    }}
+    .hero::after {{
+      content: '';
+      position: absolute;
+      bottom: -70px; right: -40px;
+      width: 260px; height: 260px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 50%;
+    }}
+    .hero-badge {{
+      display: inline-block;
+      background: rgba(255,255,255,0.3);
+      color: white;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 18px;
+      border-radius: 20px;
+      margin-bottom: 18px;
+    }}
+    .hero-title {{
+      font-size: 44px;
+      font-weight: 800;
+      color: white;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.12);
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }}
+    .hero-sub {{
+      font-size: 18px;
+      color: rgba(255,255,255,0.9);
+      font-weight: 400;
+      position: relative;
+      z-index: 1;
+    }}
+    .cards-wrap {{
+      max-width: 980px;
+      margin: 44px auto 60px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+      gap: 28px;
+    }}
+    .card {{
+      background: white;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.07);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }}
+    .card:hover {{
+      transform: translateY(-5px);
+      box-shadow: 0 16px 44px rgba(0,0,0,0.13);
+    }}
+    .card-accent {{ height: 7px; }}
+    .card-video {{
+      position: relative;
+      padding-top: 56.25%;
+    }}
+    .card-video iframe {{
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }}
+    .card-body {{ padding: 18px 20px 22px; }}
+    .card-tags {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 13px;
+    }}
+    .tag {{
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }}
+    .card-title {{
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.45;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }}
+    .num {{
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }}
+    .card-artist {{
+      font-size: 14px;
+      color: #888;
+      padding-left: 36px;
+    }}
+    .footer {{
+      text-align: center;
+      padding: 32px 20px;
+      color: #bbb;
+      font-size: 13px;
+    }}
+    @media (max-width: 620px) {{
+      .hero-title {{ font-size: 30px; }}
+      .cards-wrap {{ grid-template-columns: 1fr; padding: 0 14px; }}
+    }}
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-badge">{weekday_kr}요일 · {today}</div>
+    <h1 class="hero-title">🎵 오늘의 음악 발굴</h1>
+    <p class="hero-sub">{label} — 세계 각지의 숨겨진 음악</p>
+  </div>
 
-    <!-- 헤더 -->
-    <tr>
-      <td style="padding:32px 24px 24px;background:linear-gradient(135deg,#1a1a2e,#16213e);text-align:center;">
-        <p style="margin:0 0 6px;color:#888;font-size:13px;letter-spacing:2px;">DAILY MUSIC DISCOVERY</p>
-        <h1 style="margin:0 0 8px;color:#ffffff;font-size:26px;">🎵 오늘의 음악 발굴</h1>
-        <p style="margin:0;color:#aaaaaa;font-size:14px;">{today} ({weekday_kr}요일) &nbsp;·&nbsp; {label}</p>
-      </td>
-    </tr>
+  <div class="cards-wrap">
+    {cards_html}
+  </div>
 
-    <!-- 곡 목록 -->
-    {cards}
-
-    <!-- 푸터 -->
-    <tr>
-      <td style="padding:20px 24px;text-align:center;background:#111;">
-        <p style="margin:0;color:#555;font-size:12px;">매일 오전 9시, 세계 각지의 숨겨진 음악을 발굴합니다</p>
-      </td>
-    </tr>
-
-  </table>
+  <div class="footer">매일 오전 9시, 새로운 음악을 발굴합니다</div>
 </body>
 </html>"""
+
+
+def save_page(html):
+    os.makedirs(DOCS_DIR, exist_ok=True)
+    with open(os.path.join(DOCS_DIR, "index.html"), 'w', encoding='utf-8') as f:
+        f.write(html)
+
+
+def build_email(label, songs, today):
+    song_list = "".join(
+        f'<tr><td style="padding:10px 0;border-bottom:1px solid #f0f0f0;">'
+        f'<span style="color:#999;font-size:12px;">{genre} · {region} · {era}</span><br>'
+        f'<span style="font-weight:600;color:#333;">{item["snippet"]["title"]}</span>'
+        f'</td></tr>'
+        for item, region, genre, era in songs
+    )
+
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:20px 0;background:#f4f6fb;font-family:Arial,sans-serif;">
+<table width="560" cellpadding="0" cellspacing="0"
+       style="margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+  <tr>
+    <td style="padding:36px 32px 28px;background:linear-gradient(135deg,#ff9a9e,#fad0c4,#ffecd2);text-align:center;">
+      <p style="margin:0 0 6px;color:rgba(255,255,255,0.85);font-size:13px;letter-spacing:2px;">DAILY MUSIC DISCOVERY</p>
+      <h1 style="margin:0 0 6px;color:white;font-size:26px;font-weight:800;">🎵 오늘의 음악 발굴</h1>
+      <p style="margin:0;color:rgba(255,255,255,0.9);font-size:15px;">{today} · {label}</p>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:24px 32px;">
+      <table width="100%" cellpadding="0" cellspacing="0">{song_list}</table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:8px 32px 36px;text-align:center;">
+      <a href="{PAGE_URL}"
+         style="display:inline-block;background:linear-gradient(135deg,#ff9a9e,#ff6b6b);
+                color:white;text-decoration:none;padding:14px 36px;border-radius:30px;
+                font-size:16px;font-weight:700;box-shadow:0 4px 16px rgba(255,107,107,0.35);">
+        ▶ &nbsp;지금 바로 듣기
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:16px;text-align:center;background:#fafafa;">
+      <p style="margin:0;color:#ccc;font-size:12px;">매일 오전 9시, 세계 각지의 숨겨진 음악을 발굴합니다</p>
+    </td>
+  </tr>
+</table>
+</body></html>"""
 
 
 def send_email(subject, html_body):
@@ -190,7 +370,7 @@ def send_email(subject, html_body):
 
 def main():
     history = load_history()
-    print(f"히스토리 로드: {len(history)}곡 기록됨")
+    print(f"히스토리 로드: {len(history)}곡")
 
     label, combos = get_daily_combinations()
     print(f"오늘의 테마: {label}")
@@ -206,12 +386,16 @@ def main():
     new_ids = [item['id']['videoId'] for item, _, _, _ in songs]
     save_history(history, new_ids)
 
-    html = build_html(label, songs)
+    page_html = build_page(label, songs)
+    save_page(page_html)
+    print("페이지 생성 완료: docs/index.html")
+
     today = date.today().strftime('%Y년 %m월 %d일')
+    email_html = build_email(label, songs, today)
     subject = f"🎵 오늘의 음악 발굴 | {today} - {label}"
 
     print("이메일 전송 중...")
-    send_email(subject, html)
+    send_email(subject, email_html)
     print(f"완료! {RECIPIENT_EMAIL}로 전송됨")
 
 
