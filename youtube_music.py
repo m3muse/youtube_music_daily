@@ -82,40 +82,107 @@ def search_one_song(youtube, region, genre, era, history):
         order='relevance',
     ).execute()
     items = response.get('items', [])
-    # 히스토리에 없는 곡만 필터링
     fresh = [item for item in items if item['id']['videoId'] not in history]
     if fresh:
         return random.choice(fresh)
-    # 모두 히스토리에 있으면 그냥 랜덤 선택
     return random.choice(items) if items else None
 
 
-def format_body(label, songs):
+def build_song_card(index, item, region, genre, era):
+    title = item['snippet']['title']
+    artist = item['snippet']['channelTitle']
+    video_id = item['id']['videoId']
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+
+    return f"""
+    <tr>
+      <td style="padding:20px 24px;border-bottom:1px solid #2a2a2a;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="color:#666;font-size:12px;font-weight:bold;padding-bottom:10px;">
+              #{index} &nbsp;
+              <span style="background:#2a2a2a;color:#999;padding:3px 8px;border-radius:4px;margin-right:4px;">{genre}</span>
+              <span style="background:#2a2a2a;color:#999;padding:3px 8px;border-radius:4px;margin-right:4px;">{region}</span>
+              <span style="background:#2a2a2a;color:#999;padding:3px 8px;border-radius:4px;">{era}</span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="180" valign="top" style="padding-right:16px;">
+                    <a href="{url}" target="_blank" style="display:block;">
+                      <img src="{thumbnail}" width="180" height="101"
+                           style="display:block;border-radius:8px;border:0;" alt="{title}">
+                    </a>
+                    <a href="{url}" target="_blank"
+                       style="display:block;margin-top:8px;background:#ff0000;color:#fff;
+                              text-align:center;padding:7px 0;border-radius:6px;
+                              text-decoration:none;font-size:13px;font-weight:bold;">
+                      ▶ &nbsp;YouTube 재생
+                    </a>
+                  </td>
+                  <td valign="top">
+                    <p style="margin:0 0 6px;font-size:16px;font-weight:bold;color:#ffffff;line-height:1.4;">{title}</p>
+                    <p style="margin:0;font-size:14px;color:#aaaaaa;">{artist}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    """
+
+
+def build_html(label, songs):
     today = date.today().strftime('%Y년 %m월 %d일')
-    lines = [
-        f"{today} 오늘의 음악 발굴 - {label}",
-        "=" * 55,
-        "",
-    ]
-    for i, (item, region, genre, era) in enumerate(songs, 1):
-        title = item['snippet']['title']
-        channel = item['snippet']['channelTitle']
-        video_id = item['id']['videoId']
-        url = f"https://www.youtube.com/watch?v={video_id}"
-        lines.append(f"{i}. [{genre} / {region} / {era}]")
-        lines.append(f"   {title}")
-        lines.append(f"   채널: {channel}")
-        lines.append(f"   {url}")
-        lines.append("")
-    return "\n".join(lines)
+    weekday_kr = ["월", "화", "수", "목", "금", "토", "일"][datetime.now().weekday()]
+
+    cards = "".join(
+        build_song_card(i, item, region, genre, era)
+        for i, (item, region, genre, era) in enumerate(songs, 1)
+    )
+
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:20px 0;background:#0a0a0a;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="600" cellpadding="0" cellspacing="0"
+         style="margin:0 auto;background:#161616;border-radius:12px;overflow:hidden;">
+
+    <!-- 헤더 -->
+    <tr>
+      <td style="padding:32px 24px 24px;background:linear-gradient(135deg,#1a1a2e,#16213e);text-align:center;">
+        <p style="margin:0 0 6px;color:#888;font-size:13px;letter-spacing:2px;">DAILY MUSIC DISCOVERY</p>
+        <h1 style="margin:0 0 8px;color:#ffffff;font-size:26px;">🎵 오늘의 음악 발굴</h1>
+        <p style="margin:0;color:#aaaaaa;font-size:14px;">{today} ({weekday_kr}요일) &nbsp;·&nbsp; {label}</p>
+      </td>
+    </tr>
+
+    <!-- 곡 목록 -->
+    {cards}
+
+    <!-- 푸터 -->
+    <tr>
+      <td style="padding:20px 24px;text-align:center;background:#111;">
+        <p style="margin:0;color:#555;font-size:12px;">매일 오전 9시, 세계 각지의 숨겨진 음악을 발굴합니다</p>
+      </td>
+    </tr>
+
+  </table>
+</body>
+</html>"""
 
 
-def send_email(subject, body):
-    msg = MIMEMultipart()
+def send_email(subject, html_body):
+    msg = MIMEMultipart('alternative')
     msg['From'] = GMAIL
     msg['To'] = RECIPIENT_EMAIL
     msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain', 'utf-8'))
+    msg.attach(MIMEText(html_body, 'html', 'utf-8'))
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(GMAIL, GMAIL_PASSWORD)
         server.sendmail(GMAIL, RECIPIENT_EMAIL, msg.as_string())
@@ -138,14 +205,13 @@ def main():
 
     new_ids = [item['id']['videoId'] for item, _, _, _ in songs]
     save_history(history, new_ids)
-    print(f"히스토리 저장: {len(new_ids)}곡 추가")
 
-    body = format_body(label, songs)
+    html = build_html(label, songs)
     today = date.today().strftime('%Y년 %m월 %d일')
-    subject = f"[오늘의 음악] {today} - {label}"
+    subject = f"🎵 오늘의 음악 발굴 | {today} - {label}"
 
     print("이메일 전송 중...")
-    send_email(subject, body)
+    send_email(subject, html)
     print(f"완료! {RECIPIENT_EMAIL}로 전송됨")
 
 
